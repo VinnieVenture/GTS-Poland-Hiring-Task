@@ -1,7 +1,6 @@
-namespace EmployeeManagement.Api.Models{
-    public enum EmployeeStatus
-    {
-        Active,
-        Inactive,
-    }
+namespace EmployeeManagement.Api.Models;
+public enum EmployeeStatus
+{
+    Active,
+    Inactive,
 }
