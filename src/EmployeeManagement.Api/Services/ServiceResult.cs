@@ -12,4 +12,12 @@ public sealed record ServiceResult<T>
     public static ServiceResult<T> Conflict() => new() { Error = ServiceError.Conflict };
     public static ServiceResult<T> Invalid(IDictionary<string, string[]> errors) =>
         new() { Error = ServiceError.Validation, ValidationErrors = errors };
+
+    public static ServiceResult<T> Failure(ServiceError error)
+    {
+        if (error == ServiceError.Validation)
+            throw new ArgumentException("Use Invalid() for validation errors so the error details are included.", nameof(error));
+
+        return new() { Error = error };
+    }
 }
