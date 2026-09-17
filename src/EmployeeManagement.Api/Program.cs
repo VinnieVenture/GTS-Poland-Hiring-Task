@@ -1,3 +1,4 @@
+using System.Globalization;
 using EmployeeManagement.Api.Data;
 using EmployeeManagement.Api.Dtos;
 using EmployeeManagement.Api.ErrorHandling;
@@ -27,9 +28,10 @@ builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+ValidatorOptions.Global.LanguageManager.Culture = CultureInfo.InvariantCulture; // to avoid localization issues in validation messages
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -45,3 +47,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Makes the auto-generated Program class visible to WebApplicationFactory in the test project.
+public partial class Program;
