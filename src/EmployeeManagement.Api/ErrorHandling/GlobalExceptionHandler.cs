@@ -20,14 +20,22 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
 
         var (statusCode, title) = exception switch
         {
+            // Thrown by the server itself, e.g. 413 when an upload exceeds the size limit.
+            BadHttpRequestException badRequest =>
+                (badRequest.StatusCode, "The request could not be processed."),
+            // Only transient database problems are "try again later"; e.g. a failed login is not.
             RetryLimitExceededException or NpgsqlException { IsTransient: true } or TimeoutException =>
                 (StatusCodes.Status503ServiceUnavailable, "The database is temporarily unavailable. Please try again later."),
             _ =>
                 (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
         };
 
-        logger.LogError(exception, "Unhandled exception for {Method} {Path}",
-            httpContext.Request.Method, httpContext.Request.Path);
+        if (statusCode >= StatusCodes.Status500InternalServerError)
+            logger.LogError(exception, "Unhandled exception for {Method} {Path}",
+                httpContext.Request.Method, httpContext.Request.Path);
+        else
+            logger.LogWarning(exception, "Rejected request {Method} {Path}",
+                httpContext.Request.Method, httpContext.Request.Path);
 
         httpContext.Response.StatusCode = statusCode;
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext

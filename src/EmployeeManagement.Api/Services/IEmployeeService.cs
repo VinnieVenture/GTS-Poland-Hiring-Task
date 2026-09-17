@@ -9,4 +9,5 @@ public interface IEmployeeService
     Task<IReadOnlyList<EmployeeResponseDto>> GetAllAsync(CancellationToken cancelToken);
     Task<ServiceResult<EmployeeResponseDto>> UpdateAsync(Guid id, EmployeeRequestDto request, CancellationToken cancelToken);
     Task<ServiceResult<bool>> DeleteAsync(Guid id, CancellationToken cancelToken);
+    Task<ServiceResult<BulkImportResultDto>> ImportAsync(Stream csvStream, CancellationToken cancelToken);
 }

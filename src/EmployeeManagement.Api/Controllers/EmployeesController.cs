@@ -7,6 +7,8 @@ namespace EmployeeManagement.Api.Controllers;
 [ApiController]
 public class EmployeesController(IEmployeeService service) : ControllerBase
 {
+    private const long MaxUploadBytes = 5 * 1024 * 1024;
+
     [HttpPost("employee")]
     public async Task<IActionResult> Create(EmployeeRequestDto request, CancellationToken cancelToken)
     {
@@ -41,8 +43,26 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         return result.IsSuccess ? NoContent() : ToErrorResponse(result);
     }
 
+    // Returns 200 with a per-row report even when some rows fail (partial success).
+    // 400 only when the file itself is unusable (missing, wrong type, bad header, no rows).
     [HttpPost("employees/bulk")]
-    public IActionResult BulkImport() => Ok("TODO: bulk import");
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(MaxUploadBytes)]
+    public async Task<IActionResult> BulkImport(IFormFile? file, CancellationToken cancelToken)
+    {
+        if (file is null || file.Length == 0)
+            return FileError("A non-empty CSV file is required in the form field 'file'.");
+
+        if (!string.Equals(Path.GetExtension(file.FileName), ".csv", StringComparison.OrdinalIgnoreCase))
+            return FileError("Only .csv files are supported.");
+
+        await using var stream = file.OpenReadStream();
+        var result = await service.ImportAsync(stream, cancelToken);
+        return result.IsSuccess ? Ok(result.Value) : ToErrorResponse(result);
+    }
+
+    private IActionResult FileError(string message) =>
+        ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]> { ["file"] = [message] }));
 
     private IActionResult ToErrorResponse<T>(ServiceResult<T> result) => result.Error switch
     {
