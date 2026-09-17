@@ -20,7 +20,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
 
         var (statusCode, title) = exception switch
         {
-            RetryLimitExceededException or NpgsqlException or TimeoutException =>
+            RetryLimitExceededException or NpgsqlException { IsTransient: true } or TimeoutException =>
                 (StatusCodes.Status503ServiceUnavailable, "The database is temporarily unavailable. Please try again later."),
             _ =>
                 (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
