@@ -82,6 +82,40 @@ public class EmployeesApiTests(CustomWebApplicationFactory factory) : IClassFixt
     }
 
     [Fact]
+    public async Task Update_ThroughHttp_ReplacesTheEmployeeAndKeepsSystemFields()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/employee", TestData.ValidRequest());
+        var created = await createResponse.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+
+        var update = TestData.ValidRequest(created!.Email) with { Name = "Anna Nowak", Status = "inactive" };
+        var response = await _client.PutAsJsonAsync($"/employee/{created.Id}", update);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = await response.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+        Assert.Equal("Anna Nowak", updated!.Name);
+        Assert.Equal("Inactive", updated.Status);
+        Assert.Equal(created.Id, updated.Id);
+        Assert.Equal(created.CreatedAt, updated.CreatedAt);
+    }
+
+    [Fact]
+    public async Task Delete_UnknownId_Returns404()
+    {
+        var response = await _client.DeleteAsync($"/employee/{Guid.NewGuid()}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_MalformedId_Returns404()
+    {
+        // The {id:guid} route constraint rejects this before the controller is reached.
+        var response = await _client.GetAsync("/employee/not-a-guid");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Get_UnknownId_Returns404()
     {
         var response = await _client.GetAsync($"/employee/{Guid.NewGuid()}");

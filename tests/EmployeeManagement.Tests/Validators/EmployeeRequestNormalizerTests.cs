@@ -23,4 +23,18 @@ public class EmployeeRequestNormalizerTests
         Assert.Equal("+155501010", normalized.PhoneNo);
         Assert.Null(normalized.City);
     }
+
+    [Fact]
+    public void Normalize_KeepsBlankStatusInsteadOfTurningItIntoNull()
+    {
+        // Optional text fields become null when blank, but Status must not: null means
+        // "not provided" and defaults to Active on create, so a blank value has to stay
+        // blank and be rejected by the validator instead of silently activating someone.
+        var request = TestData.ValidRequest() with { Status = "   ", City = "   " };
+
+        var normalized = request.Normalize();
+
+        Assert.Equal(string.Empty, normalized.Status);
+        Assert.Null(normalized.City);
+    }
 }

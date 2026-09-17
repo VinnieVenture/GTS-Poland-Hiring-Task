@@ -57,6 +57,25 @@ public sealed class EmployeeServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Create_WithBlankStatus_IsRejectedInsteadOfDefaultingToActive()
+    {
+        // Guards the whole pipeline: Normalize keeps the blank value, the validator rejects it.
+        var result = await _service.CreateAsync(TestData.ValidRequest() with { Status = "   " }, CancellationToken.None);
+
+        Assert.Equal(ServiceError.Validation, result.Error);
+        Assert.Contains("Status", result.ValidationErrors!.Keys);
+        Assert.Equal(0, await _db.Employees.CountAsync());
+    }
+
+    [Fact]
+    public async Task Delete_NonExistingEmployee_ReturnsNotFound()
+    {
+        var result = await _service.DeleteAsync(Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(ServiceError.NotFound, result.Error);
+    }
+
+    [Fact]
     public async Task Update_ExistingEmployee_ChangesFieldsButKeepsIdAndCreatedAt()
     {
         var existing = await SeedEmployeeAsync("anna@example.com");
