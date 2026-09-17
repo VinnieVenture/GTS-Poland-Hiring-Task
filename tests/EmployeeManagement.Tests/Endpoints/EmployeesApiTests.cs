@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using EmployeeManagement.Api.Dtos;
 using EmployeeManagement.Tests.TestHelpers;
 using Microsoft.AspNetCore.Mvc;
@@ -49,6 +50,24 @@ public class EmployeesApiTests(CustomWebApplicationFactory factory) : IClassFixt
         Assert.Contains("HireDate", fields);
         Assert.Contains("Status", fields);
         Assert.Contains("PhoneNo", fields);
+    }
+
+    [Fact]
+    public async Task Create_WithUnparsableDate_Returns400WithoutLeakingTypeNames()
+    {
+        // Model binding fails before the validators run, so the message comes from DateOnlyJsonConverter.
+        const string json = """
+            {"name":"A","hireDate":"2222-22-11","email":"a@example.com","phoneNo":"+48123456789"}
+            """;
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await _client.PostAsync("/employee", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+        var messages = string.Join(" ", problem!.Errors.SelectMany(error => error.Value));
+        Assert.Contains("yyyy-MM-dd", messages);
+        Assert.DoesNotContain("System.", messages);
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using System.Globalization;
 using EmployeeManagement.Api.Data;
 using EmployeeManagement.Api.Dtos;
 using EmployeeManagement.Api.ErrorHandling;
+using EmployeeManagement.Api.Json;
 using EmployeeManagement.Api.Services;
 using EmployeeManagement.Api.Validators;
 using FluentValidation;
@@ -13,7 +14,9 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    // Turns an unparsable date into a readable message instead of exposing an internal .NET type name.
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter()));
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
