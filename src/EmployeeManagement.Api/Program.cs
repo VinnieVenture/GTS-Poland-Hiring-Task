@@ -1,6 +1,7 @@
 using EmployeeManagement.Api.Data;
 using EmployeeManagement.Api.Dtos;
-using EmployeeManagement.Api.Middleware;
+using EmployeeManagement.Api.ErrorHandling;
+using EmployeeManagement.Api.Services;
 using EmployeeManagement.Api.Validators;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddKeyedScoped<IValidator<EmployeeRequestDto>, EmployeeRequestValidator>(ValidatorKeys.Create);
 builder.Services.AddKeyedScoped<IValidator<EmployeeRequestDto>, UpdateEmployeeRequestValidator>(ValidatorKeys.Update);
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
