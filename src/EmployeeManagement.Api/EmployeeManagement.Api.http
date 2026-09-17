@@ -1,6 +1,69 @@
-@EmployeeManagement.Api_HostAddress = http://localhost:5027
+# Sample requests (VS / Rider / VS Code REST Client).
+# Start the database and the API first - see README.md.
 
-GET {{EmployeeManagement.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+@host = http://localhost:5027
+# Paste an id returned by "Create employee" below.
+@employeeId = 00000000-0000-0000-0000-000000000000
 
-###
+### Create employee (Status omitted -> Active)
+POST {{host}}/employee
+Content-Type: application/json
+
+{
+  "name": "Anna Kowalska",
+  "hireDate": "2024-03-01",
+  "email": "Anna.Kowalska@Example.com",
+  "phoneNo": "+48 123 456 789",
+  "profilePicture": "https://example.com/photos/anna.jpg",
+  "address": "ul. Lipowa 1",
+  "state": "Lubelskie",
+  "country": "Poland",
+  "city": "Lublin",
+  "pincode": "20-001"
+}
+
+### Create employee - validation errors (400)
+POST {{host}}/employee
+Content-Type: application/json
+
+{
+  "name": " ",
+  "hireDate": "2999-01-01",
+  "email": "not-an-email",
+  "phoneNo": "123",
+  "status": "Pending"
+}
+
+### Get all employees
+GET {{host}}/employees
+
+### Get employee by id
+GET {{host}}/employee/{{employeeId}}
+
+### Update employee (full replace, Status required)
+PUT {{host}}/employee/{{employeeId}}
+Content-Type: application/json
+
+{
+  "name": "Anna Nowak",
+  "hireDate": "2024-03-01",
+  "email": "anna.nowak@example.com",
+  "phoneNo": "+48123456789",
+  "status": "Inactive",
+  "city": "Lublin",
+  "country": "Poland"
+}
+
+### Delete employee
+DELETE {{host}}/employee/{{employeeId}}
+
+### Bulk import from the provided sample file
+POST {{host}}/employees/bulk
+Content-Type: multipart/form-data; boundary=EmployeeBoundary
+
+--EmployeeBoundary
+Content-Disposition: form-data; name="file"; filename="employees_sample.csv"
+Content-Type: text/csv
+
+< ../../samples/employees_sample.csv
+--EmployeeBoundary--
