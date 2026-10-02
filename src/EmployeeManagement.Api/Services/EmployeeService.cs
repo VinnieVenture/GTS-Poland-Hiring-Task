@@ -46,6 +46,71 @@ public class EmployeeService(
             : ServiceResult<EmployeeResponseDto>.Success(employee.ToResponse());
     }
 
+    // public async Task<PageResult<EmployeeResponseDto>> GetAllPaginatedAsync(EmployeeQuery pageRequest, CancellationToken cancelToken)
+    // {
+    //     var previousPage = pageRequest.Page - 1;
+    //     var actualPageSize = previousPage * pageRequest.PageSize;
+        
+    //     var totalCount = await db.Employees.CountAsync(cancelToken);
+    //     var totalPages = (int)Math.Ceiling((double)totalCount / pageRequest.PageSize);
+
+    //     var result = new PageResult<EmployeeResponseDto>(){
+    //         Page = pageRequest.Page,
+    //         PageSize = pageRequest.PageSize,
+    //         TotalCount = totalCount,
+    //         TotalPages = totalPages,
+
+    //         Items = await db.Employees
+    //             .AsNoTracking()
+    //             .OrderBy(e => e.CreatedAt)
+    //             .ThenBy(e => e.Id)
+    //             .Skip(actualPageSize)
+    //             .Take(pageRequest.PageSize)
+    //             .Select(e => e.ToResponse())
+    //             .ToListAsync(cancelToken)
+    //     };
+    //     return result;
+    // }
+
+    public async Task<PageResult<EmployeeResponseDto>> GetFilteredAsync(FilterQuery filterRequest, CancellationToken cancelToken)
+    {
+        var previousPage = filterRequest.Page - 1;
+        var actualPageSize = previousPage * filterRequest.PageSize;
+        IQueryable<Employee> query = db.Employees
+                .AsNoTracking()
+                .OrderBy(e => e.CreatedAt)
+                .ThenBy(e => e.Id);
+
+        if (!string.IsNullOrEmpty(filterRequest.Status) && Enum.TryParse(filterRequest.Status, ignoreCase: true,out EmployeeStatus status))
+        {
+            query = query.Where(e => e.Status == status);
+        }
+        if (!string.IsNullOrEmpty(filterRequest.City))
+        {
+            query = query.Where(e => e.City.ToLower() == filterRequest.City.ToLower());
+        }
+        if (!string.IsNullOrEmpty(filterRequest.Search))
+        {
+            query = query.Where(e => e.Name.ToLower().Contains(filterRequest.Search.ToLower()));
+        }
+        
+        var totalCount = await query.CountAsync(cancelToken);
+        var totalPages = (int)Math.Ceiling((double)totalCount / filterRequest.PageSize);
+
+        var result = new PageResult<EmployeeResponseDto>(){
+            Page = filterRequest.Page,
+            PageSize = filterRequest.PageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            Items = await query
+                .Skip(actualPageSize)
+                .Take(filterRequest.PageSize)
+                .Select(e => e.ToResponse())
+                .ToListAsync(cancelToken),
+        };
+        return result;
+    }
+
     public async Task<IReadOnlyList<EmployeeResponseDto>> GetAllAsync(CancellationToken cancelToken)
     {
         var employees = await db.Employees

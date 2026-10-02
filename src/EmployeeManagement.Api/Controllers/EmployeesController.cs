@@ -29,6 +29,21 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
     public async Task<IActionResult> GetAll(CancellationToken cancelToken) =>
         Ok(await service.GetAllAsync(cancelToken));
 
+
+    // [HttpGet("employeesPaginated")]
+    // public async Task<IActionResult> GetAllPaginated([FromQuery]EmployeeQuery pageRequest, CancellationToken cancelToken)
+    // {
+    //     var result = await service.GetAllPaginatedAsync(pageRequest, cancelToken);
+    //     return Ok(result);
+    // }
+
+    [HttpGet("employeesFiltering")]
+    public async Task<IActionResult> GetAllFiltering([FromQuery]FilterQuery filterRequest, CancellationToken cancelToken)
+    {
+        var result = await service.GetFilteredAsync(filterRequest, cancelToken);
+        return Ok(result);
+    }
+
     [HttpPut("employee/{id:guid}")]
     public async Task<IActionResult> Update(Guid id, EmployeeRequestDto request, CancellationToken cancelToken)
     {
