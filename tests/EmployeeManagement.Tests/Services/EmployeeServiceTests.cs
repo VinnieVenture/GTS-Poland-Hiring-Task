@@ -27,6 +27,7 @@ public sealed class EmployeeServiceTests : IDisposable
             _db,
             new EmployeeRequestValidator(timeProvider),
             new UpdateEmployeeRequestValidator(timeProvider),
+            new FilterQueryValidator(),
             timeProvider);
     }
 

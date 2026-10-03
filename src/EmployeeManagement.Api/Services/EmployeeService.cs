@@ -13,6 +13,7 @@ public class EmployeeService(
     AppDbContext db,
     [FromKeyedServices(ValidatorKeys.Create)] IValidator<EmployeeRequestDto> createValidator,
     [FromKeyedServices(ValidatorKeys.Update)] IValidator<EmployeeRequestDto> updateValidator,
+    IValidator<FilterQuery> filterValidator,
     TimeProvider timeProvider) : IEmployeeService
 {
     public async Task<ServiceResult<EmployeeResponseDto>> CreateAsync(EmployeeRequestDto request, CancellationToken cancelToken)
@@ -46,36 +47,13 @@ public class EmployeeService(
             : ServiceResult<EmployeeResponseDto>.Success(employee.ToResponse());
     }
 
-    // public async Task<PageResult<EmployeeResponseDto>> GetAllPaginatedAsync(EmployeeQuery pageRequest, CancellationToken cancelToken)
-    // {
-    //     var previousPage = pageRequest.Page - 1;
-    //     var actualPageSize = previousPage * pageRequest.PageSize;
-        
-    //     var totalCount = await db.Employees.CountAsync(cancelToken);
-    //     var totalPages = (int)Math.Ceiling((double)totalCount / pageRequest.PageSize);
-
-    //     var result = new PageResult<EmployeeResponseDto>(){
-    //         Page = pageRequest.Page,
-    //         PageSize = pageRequest.PageSize,
-    //         TotalCount = totalCount,
-    //         TotalPages = totalPages,
-
-    //         Items = await db.Employees
-    //             .AsNoTracking()
-    //             .OrderBy(e => e.CreatedAt)
-    //             .ThenBy(e => e.Id)
-    //             .Skip(actualPageSize)
-    //             .Take(pageRequest.PageSize)
-    //             .Select(e => e.ToResponse())
-    //             .ToListAsync(cancelToken)
-    //     };
-    //     return result;
-    // }
-
-    public async Task<PageResult<EmployeeResponseDto>> GetFilteredAsync(FilterQuery filterRequest, CancellationToken cancelToken)
+    public async Task<ServiceResult<PageResult<EmployeeResponseDto>>> GetFilteredAsync(FilterQuery filterRequest, CancellationToken cancelToken)
     {
-        var previousPage = filterRequest.Page - 1;
-        var actualPageSize = previousPage * filterRequest.PageSize;
+        var validation = await filterValidator.ValidateAsync(filterRequest, cancelToken);
+        if (!validation.IsValid)
+            return ServiceResult<PageResult<EmployeeResponseDto>>.Invalid(validation.ToDictionary());
+            
+        var skip = (filterRequest.Page - 1) * filterRequest.PageSize;
         IQueryable<Employee> query = db.Employees
                 .AsNoTracking()
                 .OrderBy(e => e.CreatedAt)
@@ -103,12 +81,12 @@ public class EmployeeService(
             TotalCount = totalCount,
             TotalPages = totalPages,
             Items = await query
-                .Skip(actualPageSize)
+                .Skip(skip)
                 .Take(filterRequest.PageSize)
                 .Select(e => e.ToResponse())
                 .ToListAsync(cancelToken),
         };
-        return result;
+        return ServiceResult<PageResult<EmployeeResponseDto>>.Success(result);
     }
 
     public async Task<IReadOnlyList<EmployeeResponseDto>> GetAllAsync(CancellationToken cancelToken)

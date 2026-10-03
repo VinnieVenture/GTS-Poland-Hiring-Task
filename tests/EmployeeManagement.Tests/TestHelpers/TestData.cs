@@ -1,4 +1,5 @@
 using EmployeeManagement.Api.Dtos;
+using EmployeeManagement.Api.Services;
 
 namespace EmployeeManagement.Tests.TestHelpers;
 
@@ -21,6 +22,13 @@ internal static class TestData
         Country = "Poland",
         City = "Lublin",
         Pincode = "20-001"
+    };
+
+    public static FilterQuery ValidFilterQuery() => new()
+    {
+        PageSize = 1,
+        Page = 1,
+        Status = "active",
     };
 
     public static string SampleCsvPath

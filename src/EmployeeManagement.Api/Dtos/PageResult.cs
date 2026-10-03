@@ -1,7 +1,4 @@
-using EmployeeManagement.Api.Dtos;
-using EmployeeManagement.Api.Models;
-
-namespace EmployeeManagement.Api.Services;
+namespace EmployeeManagement.Api.Dtos;
 
 public record PageResult<T>
 {

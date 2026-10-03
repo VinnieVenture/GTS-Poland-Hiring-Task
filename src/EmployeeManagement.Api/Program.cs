@@ -26,6 +26,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddKeyedScoped<IValidator<EmployeeRequestDto>, EmployeeRequestValidator>(ValidatorKeys.Create);
 builder.Services.AddKeyedScoped<IValidator<EmployeeRequestDto>, UpdateEmployeeRequestValidator>(ValidatorKeys.Update);
+builder.Services.AddScoped<IValidator<FilterQuery>, FilterQueryValidator>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 
 builder.Services.AddProblemDetails();

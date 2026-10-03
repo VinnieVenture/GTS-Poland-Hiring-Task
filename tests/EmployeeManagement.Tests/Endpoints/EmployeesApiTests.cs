@@ -82,6 +82,69 @@ public class EmployeesApiTests(CustomWebApplicationFactory factory) : IClassFixt
     }
 
     [Fact]
+    public async Task GetFiltered_WithPageSize0_Returns400()
+    {
+        var response = await _client.GetAsync("/employeesFiltering?page=1&pageSize=0");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetFiltered_WithPageSize101_Returns400()
+    {
+        var response = await _client.GetAsync("/employeesFiltering?page=1&pageSize=101");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetFiltered_WithPage0_Returns400()
+    {
+        var response = await _client.GetAsync("/employeesFiltering?page=0&pageSize=10");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetFiltered_WithInvalidStatus_Returns400()
+    {
+        var response = await _client.GetAsync("/employeesFiltering?page=1&pageSize=10&status=Pending");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetFiltered_ByCity_ReturnsRequestedPageWithCorrectTotals()
+    {
+        var city = $"City-{Guid.NewGuid():N}";
+        for (var i = 0; i < 3; i++)
+        {
+            var create = await _client.PostAsJsonAsync("/employee", TestData.ValidRequest() with { City = city });
+            Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+        }
+
+        var page1 = await GetPageAsync(city, page: 1);
+        var page2 = await GetPageAsync(city, page: 2);
+
+        Assert.Equal(3, page1.TotalCount);
+        Assert.Equal(2, page1.TotalPages);
+        Assert.Equal(2, page1.Items.Count());
+        Assert.Single(page2.Items);
+
+
+        var ids = page1.Items.Concat(page2.Items).Select(e => e.Id).ToList();
+        Assert.Equal(3, ids.Distinct().Count());
+    }
+
+    private async Task<PageResult<EmployeeResponseDto>> GetPageAsync(string city, int page)
+    {
+        var response = await _client.GetAsync($"/employeesFiltering?city={city}&page={page}&pageSize=2");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<PageResult<EmployeeResponseDto>>())!;
+    }
+
+    [Fact]
     public async Task Update_ThroughHttp_ReplacesTheEmployeeAndKeepsSystemFields()
     {
         var createResponse = await _client.PostAsJsonAsync("/employee", TestData.ValidRequest());
