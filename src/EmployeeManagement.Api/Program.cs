@@ -24,9 +24,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         npgsqlOptions.EnableRetryOnFailure()));
 
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddKeyedScoped<IValidator<EmployeeRequestDto>, EmployeeRequestValidator>(ValidatorKeys.Create);
+builder.Services.AddSingleton<IValidator<EmployeeStatusRequestDto>, StatusValidator>();
+builder.Services.AddSingleton<IValidator<FilterQuery>, FilterQueryValidator>();
 builder.Services.AddKeyedScoped<IValidator<EmployeeRequestDto>, UpdateEmployeeRequestValidator>(ValidatorKeys.Update);
-builder.Services.AddScoped<IValidator<FilterQuery>, FilterQueryValidator>();
+builder.Services.AddKeyedScoped<IValidator<EmployeeRequestDto>, EmployeeRequestValidator>(ValidatorKeys.Create);
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 
 builder.Services.AddProblemDetails();

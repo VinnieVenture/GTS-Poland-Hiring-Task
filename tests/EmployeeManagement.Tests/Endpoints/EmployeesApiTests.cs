@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using EmployeeManagement.Api.Dtos;
+using EmployeeManagement.Api.Models;
 using EmployeeManagement.Tests.TestHelpers;
 using Microsoft.AspNetCore.Mvc;
 
@@ -111,6 +112,143 @@ public class EmployeesApiTests(CustomWebApplicationFactory factory) : IClassFixt
         var response = await _client.GetAsync("/employeesFiltering?page=1&pageSize=10&status=Pending");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Pending")]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("1")]
+    [InlineData(null)]
+    public async Task UpdateStatus_WithInvalidStatus_Returns400(string? status)
+    {
+        var createResponse = await _client.PostAsJsonAsync("/employee", TestData.ValidRequest());
+        var created = await createResponse.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+
+        var response = await _client.PatchAsJsonAsync($"/employee/{created!.Id}/status", new EmployeeStatusRequestDto
+        {
+            Status = status
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateStatus_WithValidStatus_Returns200AndNotChangeOtherProperties()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/employee", TestData.ValidRequest());
+        var created = await createResponse.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+
+        var response = await _client.PatchAsJsonAsync($"/employee/{created!.Id}/status", new EmployeeStatusRequestDto
+        {
+            Status = "inactive"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await _client.GetAsync($"/employee/{created.Id}");
+        var updated = await result.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+        Assert.Equal(created with { Status = "Inactive" }, updated);
+    }
+
+    [Theory]
+    [InlineData("   inactive   ", "Inactive")]
+    [InlineData("INACTIVE", "Inactive")]
+    [InlineData("active", "Active")]
+    [InlineData("ACTIVE", "Active")]
+    public async Task UpdateStatus_WithValidStatusAndWhitespace_Returns200(string status, string expectedStatus)
+    {
+        var createResponse = await _client.PostAsJsonAsync("/employee", TestData.ValidRequest());
+        var created = await createResponse.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+
+        var response = await _client.PatchAsJsonAsync($"/employee/{created!.Id}/status", new EmployeeStatusRequestDto
+        {
+            Status = status
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await _client.GetAsync($"/employee/{created.Id}");
+        var updated = await result.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+        Assert.Equal(expectedStatus, updated!.Status);
+    }
+
+    [Fact]
+    public async Task UpdateStatus_WithInvalidId_Returns404()
+    {
+        var response = await _client.PatchAsJsonAsync($"/employee/{Guid.NewGuid()}/status", new EmployeeStatusRequestDto
+        {
+            Status = "active"
+        });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    
+    [Fact]
+    public async Task UpdateStatus_WithNullStatus_Returns400()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/employee", TestData.ValidRequest());
+        var created = await createResponse.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+
+        var response = await _client.PatchAsJsonAsync($"/employee/{created!.Id}/status", new EmployeeStatusRequestDto
+        {
+            Status = null
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateStatus_WithEmptyStatus_Returns400()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/employee", TestData.ValidRequest());
+        var created = await createResponse.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+
+        var response = await _client.PatchAsJsonAsync($"/employee/{created!.Id}/status", new EmployeeStatusRequestDto
+        {
+            Status = ""
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateStatus_WithEmptyBody_Returns400()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/employee", TestData.ValidRequest());
+        var created = await createResponse.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+        using var content = new StringContent("{}", Encoding.UTF8, "application/json");
+        var response = await _client.PatchAsync($"/employee/{created!.Id}/status", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateStatus_WithStatusSentTwice_Returns200()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/employee", TestData.ValidRequest());
+        var created = await createResponse.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+
+        var response1 = await _client.PatchAsJsonAsync($"/employee/{created!.Id}/status", new EmployeeStatusRequestDto
+        {
+            Status = "inactive"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
+        
+        var result1 = await _client.GetAsync($"/employee/{created.Id}");
+        var createdAfterChange1 = await result1.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+        Assert.Equal(EmployeeStatus.Inactive.ToString(), createdAfterChange1?.Status);
+
+        var response2 = await _client.PatchAsJsonAsync($"/employee/{created!.Id}/status", new EmployeeStatusRequestDto
+        {
+            Status = "inactive"
+        });
+
+        var result2 = await _client.GetAsync($"/employee/{created.Id}");
+        var createdAfterChange2 = await result2.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+
+        Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+        Assert.Equal(EmployeeStatus.Inactive.ToString(), createdAfterChange2?.Status);
     }
 
     [Fact]

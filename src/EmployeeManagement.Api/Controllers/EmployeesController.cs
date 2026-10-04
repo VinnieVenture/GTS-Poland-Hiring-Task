@@ -37,6 +37,13 @@ public class EmployeesController(IEmployeeService service) : ControllerBase
         return result.IsSuccess ? Ok(result.Value) : ToErrorResponse(result);
     }
 
+    [HttpPatch("employee/{id:guid}/status")]
+    public async Task<IActionResult> UpdateStatus(Guid id,EmployeeStatusRequestDto request, CancellationToken cancelToken)
+    {
+        var result = await service.UpdateStatusAsync(id, request, cancelToken);
+        return result.IsSuccess ? Ok(result.Value) : ToErrorResponse(result);
+    }
+
     [HttpPut("employee/{id:guid}")]
     public async Task<IActionResult> Update(Guid id, EmployeeRequestDto request, CancellationToken cancelToken)
     {

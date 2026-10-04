@@ -16,6 +16,11 @@ public static class EmployeeRequestNormalizer
         Pincode = BlankToNull(dto.Pincode)
     };
 
+    public static EmployeeStatusRequestDto Normalize(this EmployeeStatusRequestDto dto) => dto with
+    {
+        Status = dto.Status?.Trim().ToLowerInvariant(),
+    };
+
     private static string? BlankToNull(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 

@@ -1,5 +1,6 @@
 using System.Text;
 using EmployeeManagement.Api.Data;
+using EmployeeManagement.Api.Dtos;
 using EmployeeManagement.Api.Models;
 using EmployeeManagement.Api.Services;
 using EmployeeManagement.Api.Validators;
@@ -28,6 +29,7 @@ public sealed class EmployeeServiceTests : IDisposable
             new EmployeeRequestValidator(timeProvider),
             new UpdateEmployeeRequestValidator(timeProvider),
             new FilterQueryValidator(),
+            new StatusValidator(),
             timeProvider);
     }
 
@@ -74,6 +76,22 @@ public sealed class EmployeeServiceTests : IDisposable
         var result = await _service.DeleteAsync(Guid.NewGuid(), CancellationToken.None);
 
         Assert.Equal(ServiceError.NotFound, result.Error);
+    }
+
+    [Fact]
+    public async Task UpdateStatus_NonExistingEmployee_ReturnsNotFound()
+    {
+        var result = await _service.UpdateStatusAsync(Guid.NewGuid(), new EmployeeStatusRequestDto { Status = "Active" }, CancellationToken.None);
+
+        Assert.Equal(ServiceError.NotFound, result.Error);
+    }
+
+    [Fact]
+    public async Task UpdateStatus_WithInvalidStatus_ReturnsValidationErrors()
+    {
+        var existing = await SeedEmployeeAsync("anna@example.com");
+        var result = await _service.UpdateStatusAsync(existing.Id, new EmployeeStatusRequestDto { Status = "Invalid" }, CancellationToken.None);
+        Assert.Equal(ServiceError.Validation, result.Error);
     }
 
     [Fact]

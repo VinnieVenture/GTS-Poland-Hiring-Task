@@ -9,6 +9,7 @@ public interface IEmployeeService
     Task<IReadOnlyList<EmployeeResponseDto>> GetAllAsync(CancellationToken cancelToken);
     Task<ServiceResult<PageResult<EmployeeResponseDto>>> GetFilteredAsync(FilterQuery filterRequest, CancellationToken cancelToken);
     Task<ServiceResult<EmployeeResponseDto>> UpdateAsync(Guid id, EmployeeRequestDto request, CancellationToken cancelToken);
+    Task<ServiceResult<EmployeeResponseDto>> UpdateStatusAsync(Guid id, EmployeeStatusRequestDto request, CancellationToken cancelToken);
     Task<ServiceResult<bool>> DeleteAsync(Guid id, CancellationToken cancelToken);
     Task<ServiceResult<BulkImportResultDto>> ImportAsync(Stream csvStream, CancellationToken cancelToken);
 }

@@ -31,6 +31,11 @@ internal static class TestData
         Status = "active",
     };
 
+    public static EmployeeStatusRequestDto ValidEmployeeStatusRequest() => new()
+    {
+        Status = "active",
+    };
+
     public static string SampleCsvPath
     {
         get

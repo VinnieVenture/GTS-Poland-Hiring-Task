@@ -14,6 +14,7 @@ public class EmployeeService(
     [FromKeyedServices(ValidatorKeys.Create)] IValidator<EmployeeRequestDto> createValidator,
     [FromKeyedServices(ValidatorKeys.Update)] IValidator<EmployeeRequestDto> updateValidator,
     IValidator<FilterQuery> filterValidator,
+    IValidator<EmployeeStatusRequestDto> statusValidator,
     TimeProvider timeProvider) : IEmployeeService
 {
     public async Task<ServiceResult<EmployeeResponseDto>> CreateAsync(EmployeeRequestDto request, CancellationToken cancelToken)
@@ -115,6 +116,25 @@ public class EmployeeService(
             return ServiceResult<EmployeeResponseDto>.Conflict();
 
         UpdateEmployeeFrom(employee, dto);
+
+        var saveError = await TrySaveAsync(cancelToken);
+        return saveError is null
+            ? ServiceResult<EmployeeResponseDto>.Success(employee.ToResponse())
+            : ServiceResult<EmployeeResponseDto>.Failure(saveError.Value);
+    }
+
+    public async Task<ServiceResult<EmployeeResponseDto>> UpdateStatusAsync(Guid id, EmployeeStatusRequestDto request, CancellationToken cancelToken)
+    {
+        var dto = request.Normalize();
+        var validation = await statusValidator.ValidateAsync(dto, cancelToken);
+        if (!validation.IsValid)
+            return ServiceResult<EmployeeResponseDto>.Invalid(validation.ToDictionary());
+
+        var employee = await db.Employees.FirstOrDefaultAsync(e => e.Id == id, cancelToken);
+        if (employee is null)
+            return ServiceResult<EmployeeResponseDto>.NotFound();
+
+        employee.Status = ParseStatus(dto.Status!);
 
         var saveError = await TrySaveAsync(cancelToken);
         return saveError is null
